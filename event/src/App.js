@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 // Import stylesheets
 import "./App.css";
 // Firebase App (the core Firebase SDK) is always required and must be listed first
@@ -11,8 +11,15 @@ import StyledFirebaseAuth from "react-firebaseui/StyledFirebaseAuth";
 const App = () => {
   const [auth, setAuth] = useState(false);
   const [logInForm, setLogInForm] = useState(false);
+  const [text, setText] = useState("");
+  const [guestBook, setGuestBook] = useState([]);
 
   useEffect(() => {
+    firebaseAuth();
+    showGuestBookMsg();
+  }, []);
+
+  const firebaseAuth = () => {
     firebase.auth().onAuthStateChanged((user) => {
       if (user) {
         setAuth(true);
@@ -22,7 +29,25 @@ const App = () => {
         setLogInForm(false);
       }
     });
-  }, []);
+  };
+
+  const showGuestBookMsg = () => {
+    firebase
+      .firestore()
+      .collection("guestbook")
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snaps) => {
+        // Reset page
+        setGuestBook([]);
+        // Loop through documents in database
+        snaps.forEach((doc) => {
+          setGuestBook((old) => [
+            ...old,
+            doc.data().name + ": " + doc.data().text,
+          ]);
+        });
+      });
+  };
 
   const showLogIn = () => {
     if (!auth) {
@@ -31,6 +56,20 @@ const App = () => {
       firebase.auth().signOut();
       setLogInForm(false);
     }
+  };
+
+  const message = (e) => {
+    // Prevent the default form redirect
+    e.preventDefault();
+    // Write a new message to the database collection "guestbook"
+    firebase.firestore().collection("guestbook").add({
+      text: text,
+      timestamp: Date.now(),
+      name: firebase.auth().currentUser.displayName,
+      userId: firebase.auth().currentUser.uid,
+    });
+
+    setText("");
   };
 
   return (
@@ -67,7 +106,31 @@ const App = () => {
         <p>Join us for a day full of Firebase Workshops and Pizza!</p>
       </section>
 
-      <section className="guestbook-container"></section>
+      {auth && (
+        <section className="guestbook-container">
+          <h2>Discussion</h2>
+
+          <form className="leave-message">
+            <label>Leave a message: </label>
+            <input
+              type="text"
+              className="message"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button type="submit" onClick={message}>
+              <i className="material-icons">send</i>
+              <span>SEND</span>
+            </button>
+          </form>
+
+          <section className="guestbook">
+            {guestBook.map((msg) => (
+              <p>{msg}</p>
+            ))}
+          </section>
+        </section>
+      )}
     </div>
   );
 };

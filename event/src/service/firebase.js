@@ -15,6 +15,7 @@ firebase.initializeApp(firebaseConfig);
 
 // Configure FirebaseUI.
 export const uiConfig = {
+  credentialHelper: "none",
   // Popup signin flow rather than redirect flow.
   signInFlow: "popup",
   // We will display Google and Facebook as auth providers.
