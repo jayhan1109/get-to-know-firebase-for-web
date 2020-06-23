@@ -16,7 +16,6 @@ const App = () => {
 
   useEffect(() => {
     firebaseAuth();
-    showGuestBookMsg();
   }, []);
 
   const firebaseAuth = () => {
@@ -24,6 +23,7 @@ const App = () => {
       if (user) {
         setAuth(true);
         setLogInForm(false);
+        subscribe();
       } else {
         setAuth(false);
         setLogInForm(false);
@@ -31,7 +31,7 @@ const App = () => {
     });
   };
 
-  const showGuestBookMsg = () => {
+  const subscribe = () => {
     firebase
       .firestore()
       .collection("guestbook")
@@ -49,10 +49,19 @@ const App = () => {
       });
   };
 
+  const unsubscribe = () => {
+    firebase
+      .firestore()
+      .collection("guestbook")
+      .orderBy("timestamp", "desc")
+      .onSnapshot(() => {});
+  };
+
   const showLogIn = () => {
     if (!auth) {
       setLogInForm(true);
     } else {
+      unsubscribe();
       firebase.auth().signOut();
       setLogInForm(false);
     }
@@ -68,7 +77,6 @@ const App = () => {
       name: firebase.auth().currentUser.displayName,
       userId: firebase.auth().currentUser.uid,
     });
-
     setText("");
   };
 
